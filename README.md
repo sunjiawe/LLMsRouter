@@ -23,6 +23,11 @@ git clone https://github.com/sunjiawe/LLMsRouter.git
 pip install -r requirements.txt
 ```
 
+3. 配置 config.yaml
+
+将config.yaml.template重命名为`config.yaml`，并根据需要配置API 服务商的API Key。
+
+
 ## 运行
 
 ```bash

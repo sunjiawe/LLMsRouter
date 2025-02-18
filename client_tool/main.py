@@ -40,19 +40,19 @@ for chunk in response:
 '''
 方式2：query -> "proxy" field
 '''
-from openai import OpenAI
+# from openai import OpenAI
 
-client = OpenAI(
-    base_url="http://localhost:8000/v1",
-    api_key=os.getenv('OPENROUTER_API_KEY')
-    default_query={"proxy":"https://openrouter.ai/api/v1"}
-)
+# client = OpenAI(
+#     base_url="http://localhost:8000/v1",
+#     api_key=os.getenv('OPENROUTER_API_KEY'),
+#     default_query={"proxy":"https://openrouter.ai/api/v1"}
+# )
 
-completion = client.chat.completions.create(
-    model="google/gemini-2.0-flash-lite-preview-02-05:free", 
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "Why is AI cool? Answer in 20 words or less."}
-    ]
-)
-print(completion.choices[0].message.content)
+# completion = client.chat.completions.create(
+#     model="google/gemini-2.0-flash-lite-preview-02-05:free", 
+#     messages=[
+#         {"role": "system", "content": "You are a helpful assistant."},
+#         {"role": "user", "content": "Why is AI cool? Answer in 20 words or less."}
+#     ]
+# )
+# print(completion.choices[0].message.content)

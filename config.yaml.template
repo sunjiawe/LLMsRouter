@@ -1,0 +1,17 @@
+servers:
+  # 服务器别名作为键名
+  local_llm:
+    url: "http://10.30.203.106:8030/v1"
+    api_key: "set what ever you want, not used"
+  
+  huoshan:
+    url: "https://ark.cn-beijing.volces.com/api/v3"
+    api_key: "火山方舟的API Key"
+
+  openrouter:
+    url: "https://openrouter.ai/api/v1"
+    api_key: "Your OpenRouter API Key"
+
+  openai:
+    url: "https://api.openai.com/v1"
+    api_key: "Your OpenAI API Key"    
