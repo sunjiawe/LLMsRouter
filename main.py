@@ -8,6 +8,7 @@ from typing import Optional, Dict, Any, List
 import os
 from datetime import datetime
 import asyncio
+import aiohttp
 from pydantic import BaseModel
 
 # 配置日志
@@ -116,20 +117,41 @@ def get_api_key(headers: Dict[str, str], server_alias: Optional[str]) -> str:
 async def fetch_models_from_server(server_alias: str, server_config: ServerConfig) -> List[Dict[str, Any]]:
     """从单个服务器获取模型列表"""
     try:
-        print(f"server_alias: {server_alias}, server_config: {server_config}")
-        client = AsyncOpenAI(
-            api_key=server_config.api_key,
-            base_url=server_config.url,
-        )
-        
-        response = await client.models.list()
-        models = response.model_dump()["data"]
-        
-        # 为每个模型添加服务器标识
-        for model in models:
-            model["id"] = f"[{server_alias}]{model['id']}"
-        
-        return models
+        logger.debug(f"从服务器 {server_alias} 获取模型列表")
+        headers = {
+            "Authorization": f"Bearer {server_config.api_key}",
+            "Content-Type": "application/json"
+        }
+        models_url = f"{server_config.url}/models"
+
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(models_url, headers=headers, timeout=10) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        raise Exception(f"获取模型列表失败: HTTP {response.status}, {error_text}")
+                    data = await response.json()
+                    
+                    # 标准OpenAI格式
+                    models = data.get("data", [])
+                    if not models and isinstance(data, list):
+                        # 某些服务器可能直接返回模型列表
+                        models = data
+                        
+                    # 为每个模型添加服务器标识
+                    for model in models:
+                        if isinstance(model, str):
+                            # 如果模型是字符串，转换为字典
+                            model = {"id": model}
+                        model["id"] = f"[{server_alias}]{model['id']}"
+                    
+                    return models
+            except asyncio.TimeoutError:
+                logger.error(f"从服务器 {server_alias} 获取模型列表超时")
+                return []
+            except aiohttp.ClientError as e:
+                logger.error(f"从服务器 {server_alias} 获取模型列表网络错误: {str(e)}")
+                return []
     except Exception as e:
         logger.error(f"从服务器 {server_alias} 获取模型列表失败: {str(e)}")
         return []

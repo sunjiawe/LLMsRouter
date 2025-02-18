@@ -12,6 +12,10 @@ servers:
     url: "https://openrouter.ai/api/v1"
     api_key: "Your OpenRouter API Key"
 
+  deepseek:
+    url: "https://api.deepseek.com"
+    api_key: "Your DeepSeek API Key"
+
   openai:
     url: "https://api.openai.com/v1"
     api_key: "Your OpenAI API Key"    
