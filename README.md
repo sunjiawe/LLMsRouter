@@ -2,14 +2,16 @@
 
 LLMsRouter 是一个基于 FastAPI 的 OpenAI API 转发服务，支持将 OpenAI 兼容的 API 请求转发到不同的目标服务器。
 
-## 功能特点
-
-- 转发 OpenAI 兼容的 API 请求，可以集成多个LLM Provider
+功能特性：
+- 在一个OpenAI API Config下集成多个LLM Provider
+- 转发 OpenAI 兼容的 API 请求，通过配置文件管理LLM Provider的API Key
 - 支持流式响应（stream mode）
 - 两种转发模式：
   - Proxy 模式：通过 URL 参数指定目标服务器
   - Auto 模式：通过模型名称指定目标服务器（格式：[server]model_name）
-
+- 支持Langfuse的API请求追踪(Trace)
+  - 可以轻松统计不同 API Provider 的 tokens 消耗
+  - 帮助你调试 agent 工具的调用链路、prompt tricks
 
 ## 安装
 
@@ -63,6 +65,13 @@ curl http://localhost:8000/v1/chat/completions \
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
 ```
+
+## Langfuse
+
+可以去官网注册一个账号，然后创建一个项目，获取到 `LANGFUSE_SECRET_KEY` 和 `LANGFUSE_PUBLIC_KEY`，然后配置到 `.env` 文件中。
+
+也可以 [自建Langfuse Server](https://langfuse.com/self-hosting) ，并修改`.env`文件中的 `LANGFUSE_HOST` 的IP。
+
 
 ## 日志
 

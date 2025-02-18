@@ -1,7 +1,7 @@
 servers:
   # 服务器别名作为键名
   local_llm:
-    url: "http://10.30.203.106:8030/v1"
+    url: "http://localhost:11434/v1"
     api_key: "set what ever you want, not used"
   
   huoshan:
