@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import StreamingResponse
-from openai import OpenAI, AsyncOpenAI
+import langfuse
+from langfuse.openai import openai
 from loguru import logger
 import json
 import yaml
@@ -10,11 +11,14 @@ from datetime import datetime
 import asyncio
 import aiohttp
 from pydantic import BaseModel
+from dotenv import load_dotenv
+
+load_dotenv()  # load .env
 
 # 配置日志
 logger.add("api_proxy.log", 
            format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
-           rotation="500 MB")
+           rotation="50 MB")
 
 class ServerConfig(BaseModel):
     url: str
@@ -200,10 +204,8 @@ async def proxy_request(request: Request, target_url: str, server_alias: Optiona
         # 从model字段中提取真实的模型名称
         body["model"] = extract_real_model_name(body["model"])
 
-        del body["stream_options"]  # openai 不支持stream_options字段
-
         # 创建OpenAI客户端
-        client = AsyncOpenAI(
+        client = openai.AsyncOpenAI(
             api_key=api_key,
             base_url=target_url
         )
@@ -211,17 +213,20 @@ async def proxy_request(request: Request, target_url: str, server_alias: Optiona
         if "/chat/completions" in request.url.path:
             if is_stream:
                 # 流式响应
+                stream = await client.chat.completions.create(**body)
                 # stream = await client.chat.completions.create(
                 #     model=body["model"],
                 #     messages=body["messages"],
-                #     stream=True
+                #     stream=True,
+                #     stream_options={"include_usage": True},
                 # )
-                stream = await client.chat.completions.create(**body)
                 
                 async def generate():
                     try:
                         async for chunk in stream:
-                            yield f"data: {chunk.model_dump_json()}\n\n"
+                            if chunk.choices:
+                                yield f"data: {chunk.model_dump_json()}\n\n"
+                        openai.flush_langfuse()
                     except Exception as e:
                         logger.error(f"流式响应生成失败: {str(e)}")
                         yield f"data: {json.dumps({'error': str(e)})}\n\n"
