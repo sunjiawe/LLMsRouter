@@ -7,10 +7,12 @@ servers:
   huoshan:
     url: "https://ark.cn-beijing.volces.com/api/v3"
     api_key: "火山方舟的API Key"
+    override: ["model1", "model2"]  # 火山暂不支持/models端口，手动指定可用模型
 
   openrouter:
     url: "https://openrouter.ai/api/v1"
     api_key: "Your OpenRouter API Key"
+    filter: "free"  # 只显示包含 free 的模型
 
   deepseek:
     url: "https://api.deepseek.com"

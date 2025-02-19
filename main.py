@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 import asyncio
 import aiohttp
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 load_dotenv()  # load .env
@@ -23,6 +23,9 @@ logger.add("api_proxy.log",
 class ServerConfig(BaseModel):
     url: str
     api_key: str
+    model_filter: Optional[str] = Field(None, alias='filter')
+    override: Optional[List[str]] = None
+    append: Optional[List[str]] = None
 
 class Config(BaseModel):
     servers: Dict[str, ServerConfig]
@@ -122,6 +125,11 @@ async def fetch_models_from_server(server_alias: str, server_config: ServerConfi
     """从单个服务器获取模型列表"""
     try:
         logger.debug(f"从服务器 {server_alias} 获取模型列表")
+        
+        # 如果设置了 override，直接返回指定的模型列表
+        if server_config.override is not None:
+            return [{"id": f"[{server_alias}]{model}"} for model in server_config.override]
+            
         headers = {
             "Authorization": f"Bearer {server_config.api_key}",
             "Content-Type": "application/json"
@@ -141,15 +149,35 @@ async def fetch_models_from_server(server_alias: str, server_config: ServerConfi
                     if not models and isinstance(data, list):
                         # 某些服务器可能直接返回模型列表
                         models = data
+                    
+                    # 应用过滤器
+                    if server_config.model_filter:
+                        filter_conditions = server_config.model_filter.split()
+                        for condition in filter_conditions:
+                            # 将*通配符转换为正则表达式
+                            pattern = condition.replace("*", ".*")
+                            import re
+                            regex = re.compile(pattern, re.IGNORECASE)
+                            models = [m for m in models if (
+                                isinstance(m, dict) and regex.search(m["id"]) or
+                                isinstance(m, str) and regex.search(m)
+                            )]
                         
                     # 为每个模型添加服务器标识
+                    processed_models = []
                     for model in models:
                         if isinstance(model, str):
                             # 如果模型是字符串，转换为字典
                             model = {"id": model}
                         model["id"] = f"[{server_alias}]{model['id']}"
+                        processed_models.append(model)
                     
-                    return models
+                    # 添加 append 字段中的模型
+                    if server_config.append:
+                        for model in server_config.append:
+                            processed_models.append({"id": f"[{server_alias}]{model}"})
+                    
+                    return processed_models
             except asyncio.TimeoutError:
                 logger.error(f"从服务器 {server_alias} 获取模型列表超时")
                 return []

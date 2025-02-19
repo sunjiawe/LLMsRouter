@@ -27,8 +27,52 @@ pip install -r requirements.txt
 
 3. 配置 config.yaml
 
-将config.yaml.template重命名为`config.yaml`，并根据需要配置API 服务商的API Key。
+将config.yaml.template重命名为`config.yaml`，并根据需要配置服务商信息。配置文件结构如下：
 
+```yaml
+servers:
+  # 服务器别名
+  server_alias:
+    url: "服务器URL"
+    api_key: "API密钥"
+    filter: "模型过滤条件"    # 可选，支持多个条件（空格分隔）和*通配符
+    override: ["model1", "model2"]  # 可选，手动指定模型列表，设置后将跳过API请求
+    append: ["model3", "model4"]    # 可选，在API返回的模型列表后追加指定模型
+
+```
+
+配置说明：
+- `url`: 服务器的API基础URL
+- `api_key`: 服务器的API密钥
+- `filter`: （可选）模型过滤条件
+  - 支持多个条件，用空格分隔，例如 "gpt free" 表示模型名称同时包含 gpt 和 free
+  - 支持 * 通配符，例如 "gpt*" 表示以 gpt 开头的模型
+- `override`: （可选）手动指定模型列表
+  - 如果设置此字段，将不会请求服务器的 /models 接口
+  - 直接使用指定的模型列表
+- `append`: （可选）追加模型
+  - 这些模型会被添加到从API获取的模型列表后面
+  - 本字段不受filter字段的影响
+
+示例配置：
+```yaml
+servers:
+  local_llm:
+    url: "http://localhost:8000/v1"
+    api_key: "your-api-key"
+    filter: "llama vicuna"  # 只显示同时包含 llama 和 vicuna 的模型
+    append: ["custom-model"]  # 追加自定义模型
+
+  openai:
+    url: "https://api.openai.com/v1"
+    api_key: "your-openai-key"
+    filter: "gpt"  # 只显示包含 gpt 的模型
+    
+  custom_server:
+    url: "https://custom-server.com/v1"
+    api_key: "your-key"
+    override: ["model1", "model2"]  # 手动指定可用模型
+```
 
 ## 运行
 
