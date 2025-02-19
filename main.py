@@ -199,7 +199,7 @@ async def list_models(request: Request):
     try:
         current_time = time.time()
         
-        # 使用锁检查缓存
+        # 使用锁检查缓存： 即使多个请求同时到达，也只有一个请求会更新缓存
         with cache_lock:
             if models_cache and (current_time - models_cache.timestamp) < CACHE_TTL:
                 logger.debug("返回缓存的模型列表")
