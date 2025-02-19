@@ -3,8 +3,8 @@
 LLMsRouter 是一个基于 FastAPI 的 OpenAI API 转发服务，支持将 OpenAI 兼容的 API 请求转发到不同的目标服务器。
 
 这个项目的初衷：
-- 使用Cline时，只能配置一个 OpenAI兼容的URL。利用LLMsRouter可以中继多个LLM服务商。且集成Langfuse在单个WEB UI中查看多个服务器的tokens消耗。 (虽然后面发现了Roo Code支持多个配置切换)
-- 对于一些 agnet 工具或插件，想了解其背后的prompt tricks，需要去看源码。 通过 LLMsRouter with Langfuse，可以轻松的查看到这些agent工具背后的 prompt 工程。
+- 使用Cline插件时，只能配置一个 OpenAI 兼容的URL。利用 LLMsRouter 可以中继多个 LLM 服务商。且接入 Langfuse 后，就可以在单个 WEB UI 中查看这些服务商的 tokens 消耗。 (虽然后面发现了 Roo Code 支持多个配置切换)
+- 对于一些 agnet 工具或插件，想了解其背后的 prompt tricks，需要去看源码。 通过 LLMsRouter with Langfuse，可以轻松的查看到这些 agent 工具背后的 prompt 工程。
 
 
 功能特性：
