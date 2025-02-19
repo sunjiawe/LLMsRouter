@@ -12,6 +12,9 @@ import asyncio
 import aiohttp
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+import time
+from dataclasses import dataclass
+from threading import Lock
 
 load_dotenv()  # load .env
 
@@ -190,9 +193,22 @@ async def fetch_models_from_server(server_alias: str, server_config: ServerConfi
 
 @app.get("/v1/models")
 async def list_models(request: Request):
-    """获取所有配置的服务器的模型列表"""
+    """获取所有配置的服务器的模型列表，使用缓存机制"""
+    global models_cache
+    
     try:
-        # 并发获取所有服务器的模型列表
+        current_time = time.time()
+        
+        # 使用锁检查缓存
+        with cache_lock:
+            if models_cache and (current_time - models_cache.timestamp) < CACHE_TTL:
+                logger.debug("返回缓存的模型列表")
+                return Response(
+                    content=json.dumps({"data": models_cache.data, "object": "list"}),
+                    media_type="application/json"
+                )
+        
+        # 缓存无效或不存在，获取新数据
         tasks = []
         for server_alias, server_config in config.servers.items():
             task = fetch_models_from_server(server_alias, server_config)
@@ -205,6 +221,13 @@ async def list_models(request: Request):
         all_models = []
         for models in models_lists:
             all_models.extend(models)
+        
+        # 更新缓存
+        with cache_lock:
+            models_cache = ModelsCache(
+                data=all_models,
+                timestamp=current_time
+            )
         
         return Response(
             content=json.dumps({"data": all_models, "object": "list"}),
@@ -317,6 +340,16 @@ async def proxy_openai(request: Request, path: str):
             media_type="application/json",
             status_code=500
         )
+
+@dataclass
+class ModelsCache:
+    data: List[Dict[str, Any]]
+    timestamp: float
+
+# 全局缓存和锁
+models_cache: Optional[ModelsCache] = None
+cache_lock = Lock()
+CACHE_TTL = 300  # 缓存时间为5分钟
 
 if __name__ == "__main__":
     import uvicorn
