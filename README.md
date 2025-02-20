@@ -115,11 +115,86 @@ curl http://localhost:8000/v1/chat/completions \
   }'
 ```
 
-## Langfuse
+## 进阶配置
+
+### Langfuse
 
 可以去官网注册一个账号，然后创建一个项目，获取到 `LANGFUSE_SECRET_KEY` 和 `LANGFUSE_PUBLIC_KEY`，然后配置到 `.env` 文件中。
 
 也可以 [自建Langfuse Server](https://langfuse.com/self-hosting) ，并修改`.env`文件中的 `LANGFUSE_HOST` 的IP。
+
+### 用户管理
+
+LLMsRouter 提供了一个可选的用户管理子系统，可以通过环境变量 `ENABLE_ACCOUNT_MANAGEMENT` 来启用或禁用。启用后，所有的大模型对话请求都需要进行用户认证。
+
+特性-用户追踪：启用用户管理后，每次对话请求的 langfuse 跟踪都自动绑定用户名，便于在后台追踪每个用户的使用情况
+
+#### 启用用户管理
+
+1. 在 `.env` 文件中设置：
+```bash
+ENABLE_ACCOUNT_MANAGEMENT=true
+```
+
+2. 用户数据将存储在 SQLite 数据库中（默认文件名为 `users.db`）
+
+#### 用户管理命令行工具
+
+提供了一个命令行工具用于管理用户，支持以下操作：
+
+1. 添加单个用户：
+```bash
+python manage.py add <username> --email <email>
+# 例如：
+python manage.py add testuser --email test@example.com
+```
+创建用户时会自动生成 API 密钥。
+
+2. 删除用户：
+```bash
+python manage.py delete <username>
+```
+
+3. 批量导入用户：
+```bash
+python manage.py import <file>
+```
+支持从 CSV 或 JSON 文件批量导入用户。
+
+文件格式示例：
+- CSV 文件 (users.csv):
+```csv
+username,email
+user1,user1@example.com
+user2,user2@example.com
+```
+
+- JSON 文件 (users.json):
+```json
+[
+  {
+    "username": "user1",
+    "email": "user1@example.com"
+  },
+  {
+    "username": "user2",
+    "email": "user2@example.com"
+  }
+]
+```
+
+4. 列出所有用户：
+```bash
+python manage.py list
+```
+
+#### API 使用
+
+启用用户管理后，所有的 API 请求都需要在请求头中包含有效的用户 API 密钥。
+
+用户的 API 密钥在创建用户时自动生成，可以通过 `list` 命令查看。
+
+认证方法：在openai客户端侧的 API Key填入用户密钥用于 LLMsRouter 的用户认证。
 
 
 ## 日志
