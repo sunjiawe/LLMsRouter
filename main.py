@@ -16,10 +16,8 @@ import time
 from dataclasses import dataclass
 from threading import Lock
 
-# 新增导入
-from database.sqlite import SQLiteProvider
-from utils.auth import get_current_user
-from models.user import User
+# 用户管理系统
+from user_management import SQLiteProvider, get_current_user, User
 
 load_dotenv()  # load .env
 

@@ -2,8 +2,8 @@ import secrets
 import string
 from typing import Optional
 from fastapi import Request, HTTPException
-from models.user import User
-from database.base import DatabaseProvider
+from .models import User
+from .database import DatabaseProvider
 
 def generate_api_key(length: int = 32) -> str:
     """生成随机API密钥"""

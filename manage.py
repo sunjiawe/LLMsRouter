@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-import sys
-from cli.user_management import main
+from user_management.cli import main
 import asyncio
 
 if __name__ == "__main__":

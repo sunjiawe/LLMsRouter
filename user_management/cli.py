@@ -2,18 +2,10 @@ import asyncio
 import argparse
 import csv
 import json
-import sys
-import os
-from pathlib import Path
 from typing import List, Optional
-
-# 添加项目根目录到Python路径
-project_root = str(Path(__file__).parent.parent)
-sys.path.insert(0, project_root)
-
-from models.user import User
-from database.sqlite import SQLiteProvider
-from utils.auth import generate_api_key
+from .models import User
+from .database import SQLiteProvider
+from .auth import generate_api_key
 from datetime import datetime
 
 async def create_user(
