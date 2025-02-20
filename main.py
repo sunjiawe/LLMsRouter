@@ -253,6 +253,38 @@ async def list_models(request: Request):
             status_code=500
         )
 
+@app.post("/v1/{path:path}")
+async def proxy_openai(request: Request, path: str):
+    """处理所有OpenAI API请求的主路由"""
+    try:
+        # 如果启用了用户管理，先进行用户认证
+        if ENABLE_ACCOUNT_MANAGEMENT:
+            user = await get_current_user(request, db)
+            if not user:
+                return Response(
+                    content=json.dumps({"error": "Unauthorized"}),
+                    media_type="application/json",
+                    status_code=401
+                )
+        
+        body = await request.json()
+        proxy_url = request.query_params.get("proxy")
+        model = body.get("model", "")
+        
+        target_url, server_alias = parse_target_url(model, proxy_url)
+        if not target_url.endswith("/v1"):
+            target_url = f"{target_url.rstrip('/')}/v1"
+            
+        return await proxy_request(request, target_url, server_alias)
+        
+    except Exception as e:
+        logger.error(f"处理请求失败: {str(e)}")
+        return Response(
+            content=json.dumps({"error": str(e)}),
+            media_type="application/json",
+            status_code=500
+        )
+
 async def proxy_request(request: Request, target_url: str, server_alias: Optional[str] = None) -> Response:
     """代理请求到目标服务器"""
     # 读取原始请求内容
@@ -325,28 +357,6 @@ async def proxy_request(request: Request, target_url: str, server_alias: Optiona
         )
     except Exception as e:
         logger.error(f"代理请求失败: {str(e)}")
-        return Response(
-            content=json.dumps({"error": str(e)}),
-            media_type="application/json",
-            status_code=500
-        )
-
-@app.post("/v1/{path:path}")
-async def proxy_openai(request: Request, path: str):
-    """处理所有OpenAI API请求的主路由"""
-    try:
-        body = await request.json()
-        proxy_url = request.query_params.get("proxy")
-        model = body.get("model", "")
-        
-        target_url, server_alias = parse_target_url(model, proxy_url)
-        if not target_url.endswith("/v1"):
-            target_url = f"{target_url.rstrip('/')}/v1"
-            
-        return await proxy_request(request, target_url, server_alias)
-        
-    except Exception as e:
-        logger.error(f"处理请求失败: {str(e)}")
         return Response(
             content=json.dumps({"error": str(e)}),
             media_type="application/json",
