@@ -258,9 +258,10 @@ async def proxy_openai(request: Request, path: str):
     """处理所有OpenAI API请求的主路由"""
     try:
         # 如果启用了用户管理，先进行用户认证
+        current_user = "anonymous"
         if ENABLE_ACCOUNT_MANAGEMENT:
-            user = await get_current_user(request, db)
-            if not user:
+            current_user = await get_current_user(request, db)
+            if not current_user:
                 return Response(
                     content=json.dumps({"error": "Unauthorized"}),
                     media_type="application/json",
@@ -275,7 +276,7 @@ async def proxy_openai(request: Request, path: str):
         if not target_url.endswith("/v1"):
             target_url = f"{target_url.rstrip('/')}/v1"
             
-        return await proxy_request(request, target_url, server_alias)
+        return await proxy_request(request, target_url, server_alias, current_user)
         
     except Exception as e:
         logger.error(f"处理请求失败: {str(e)}")
@@ -285,7 +286,12 @@ async def proxy_openai(request: Request, path: str):
             status_code=500
         )
 
-async def proxy_request(request: Request, target_url: str, server_alias: Optional[str] = None) -> Response:
+async def proxy_request(
+    request: Request, 
+    target_url: str, 
+    server_alias: Optional[str] = None,
+    current_user: Optional[User] = None
+) -> Response:
     """代理请求到目标服务器"""
     # 读取原始请求内容
     body = await request.json()
@@ -305,16 +311,15 @@ async def proxy_request(request: Request, target_url: str, server_alias: Optiona
             base_url=target_url
         )
         
+        # 如果启用了用户管理且有用户信息，添加user_id参数
+        completion_kwargs = {**body}
+        if ENABLE_ACCOUNT_MANAGEMENT and current_user:
+            completion_kwargs["user_id"] = current_user.username
+        
         if "/chat/completions" in request.url.path:
             if is_stream:
                 # 流式响应
-                stream = await client.chat.completions.create(**body)
-                # stream = await client.chat.completions.create(
-                #     model=body["model"],
-                #     messages=body["messages"],
-                #     stream=True,
-                #     stream_options={"include_usage": True},
-                # )
+                stream = await client.chat.completions.create(**completion_kwargs)
                 
                 async def generate():
                     try:
@@ -334,7 +339,7 @@ async def proxy_request(request: Request, target_url: str, server_alias: Optiona
                 )
             else:
                 # 非流式响应
-                response = await client.chat.completions.create(**body)
+                response = await client.chat.completions.create(**completion_kwargs)
                 response_data = response.model_dump()
                 await log_request_response(body, response_data, target_url, is_stream)
                 return Response(
