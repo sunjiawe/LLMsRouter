@@ -121,18 +121,20 @@ def extract_real_model_name(model: str) -> str:
         return model[model.index("]") + 1:]
     return model
 
-def get_api_key(headers: Dict[str, str], server_alias: Optional[str]) -> str:
-    """获取API密钥
-    优先使用配置文件中的API密钥，如果没有则使用请求头中的API密钥
+def get_llm_api_key(headers: Dict[str, str], server_alias: Optional[str]) -> str:
+    """获取LLM API密钥
+    优先使用配置文件中的LLM API密钥，如果没有则使用请求头中的authorization
     """
     if server_alias and server_alias in config.servers:
         return config.servers[server_alias].api_key
     
-    api_key = headers.get("authorization", "").replace("Bearer ", "")
-    if api_key:
-        return api_key
+    # 未开启用户子系统，尝试用请求头中的API密钥调用LLM
+    if not  ENABLE_ACCOUNT_MANAGEMENT:
+        llm_api_key = headers.get("authorization", "").replace("Bearer ", "")
+        if llm_api_key:
+            return llm_api_key
     
-    raise ValueError("未找到有效的API密钥")
+    raise ValueError("未找到有效的LLM API密钥")
 
 async def fetch_models_from_server(server_alias: str, server_config: ServerConfig) -> List[Dict[str, Any]]:
     """从单个服务器获取模型列表"""
@@ -258,8 +260,8 @@ async def proxy_request(request: Request, target_url: str, server_alias: Optiona
     headers = dict(request.headers)
     
     try:
-        # 获取API密钥
-        api_key = get_api_key(headers, server_alias)
+        # 获取LLM API密钥
+        llm_api_key = get_llm_api_key(headers, server_alias)
         
         is_stream = body.get("stream", False)
         # 从model字段中提取真实的模型名称
@@ -267,7 +269,7 @@ async def proxy_request(request: Request, target_url: str, server_alias: Optiona
 
         # 创建OpenAI客户端
         client = openai.AsyncOpenAI(
-            api_key=api_key,
+            api_key=llm_api_key,
             base_url=target_url
         )
         
