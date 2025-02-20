@@ -1,5 +1,6 @@
 __pycache__
 *.log
 config.yaml
+users.db
 
 venv/

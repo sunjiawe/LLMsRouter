@@ -16,6 +16,11 @@ import time
 from dataclasses import dataclass
 from threading import Lock
 
+# 新增导入
+from database.sqlite import SQLiteProvider
+from utils.auth import get_current_user
+from models.user import User
+
 load_dotenv()  # load .env
 
 # 配置日志
@@ -35,6 +40,8 @@ class Config(BaseModel):
 
 # 全局配置
 config: Config = None
+db: Optional[SQLiteProvider] = None
+ENABLE_ACCOUNT_MANAGEMENT = os.getenv("ENABLE_ACCOUNT_MANAGEMENT", "false").lower() == "true"
 
 def load_config(config_path: str = "config.yaml") -> Config:
     """加载YAML配置文件"""
@@ -51,9 +58,14 @@ app = FastAPI(title="OpenAI API Proxy Router")
 @app.on_event("startup")
 async def startup_event():
     """服务启动时加载配置"""
-    global config
+    global config, db
     config = load_config()
     logger.info(f"已加载服务器配置: {list(config.servers.keys())}")
+    
+    if ENABLE_ACCOUNT_MANAGEMENT:
+        db = SQLiteProvider()
+        await db.initialize()
+        logger.info("用户管理系统已启用")
 
 async def log_request_response(request_data: Dict[Any, Any], 
                              response_data: Dict[Any, Any], 
