@@ -3,6 +3,7 @@ from typing import List, Optional
 import aiosqlite
 from datetime import datetime
 from .models import User
+import json
 
 class DatabaseProvider(ABC):
     @abstractmethod
@@ -46,6 +47,7 @@ class SQLiteProvider(DatabaseProvider):
                     username TEXT PRIMARY KEY,
                     api_key TEXT UNIQUE NOT NULL,
                     email TEXT,
+                    permissions TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 )
@@ -56,10 +58,10 @@ class SQLiteProvider(DatabaseProvider):
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 """
-                INSERT INTO users (username, api_key, email, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO users (username, api_key, email, permissions, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (user.username, user.api_key, user.email, 
+                (user.username, user.api_key, user.email, json.dumps(user.permissions), 
                  user.created_at.isoformat(), user.updated_at.isoformat())
             )
             await db.commit()
@@ -102,11 +104,23 @@ class SQLiteProvider(DatabaseProvider):
                 rows = await cursor.fetchall()
                 return [self._row_to_user(row) for row in rows]
     
+    async def update_user_permissions(self, username: str, permissions: dict) -> bool:
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute(
+                """
+                UPDATE users SET permissions = ? WHERE username = ?
+                """,
+                (json.dumps(permissions), username)
+            )
+            await db.commit()
+            return cursor.rowcount > 0
+    
     def _row_to_user(self, row) -> User:
         return User(
             username=row[0],
             api_key=row[1],
             email=row[2] if row[2] else None,
-            created_at=datetime.fromisoformat(row[3]),
-            updated_at=datetime.fromisoformat(row[4])
+            permissions=json.loads(row[3]),
+            created_at=datetime.fromisoformat(row[4]),
+            updated_at=datetime.fromisoformat(row[5])
         ) 

@@ -11,7 +11,8 @@ from datetime import datetime
 async def create_user(
     db: SQLiteProvider,
     username: str,
-    email: Optional[str] = None
+    email: Optional[str] = None,
+    permissions: Optional[str] = None
 ) -> User:
     """创建单个用户"""
     # 检查用户是否已存在
@@ -19,11 +20,19 @@ async def create_user(
     if existing_user:
         raise ValueError(f"用户 '{username}' 已存在")
     
+    # 处理权限
+    if permissions is None:
+        permissions_dict = {'*': True}  # 默认允许所有provider
+    else:
+        permissions_list = permissions.split(',')
+        permissions_dict = {provider.strip(): True for provider in permissions_list}
+    
     # 创建新用户
     user = User(
         username=username,
         api_key=generate_api_key(),
-        email=email
+        email=email,
+        permissions=permissions_dict
     )
     return await db.create_user(user)
 
@@ -66,9 +75,15 @@ async def main():
     subparsers = parser.add_subparsers(dest='command', help='可用命令')
     
     # 添加用户
-    add_parser = subparsers.add_parser('add', help='添加单个用户')
-    add_parser.add_argument('username', help='用户名')
-    add_parser.add_argument('--email', help='邮箱地址')
+    add_parser = subparsers.add_parser('add', help='创建新用户')
+    add_parser.add_argument('username', type=str, help='用户名')
+    add_parser.add_argument('--email', type=str, help='用户邮箱')
+    add_parser.add_argument('--permissions', type=str, help='用户权限，格式为逗号分隔字符串')
+
+    # 修改用户权限命令
+    modify_parser = subparsers.add_parser('modify', help='修改用户权限')
+    modify_parser.add_argument('username', type=str, help='用户名')
+    modify_parser.add_argument('--permissions', type=str, help='新的用户权限，逗号分隔的provider列表，星号表示所有')
     
     # 删除用户
     delete_parser = subparsers.add_parser('delete', help='删除用户')
@@ -92,7 +107,7 @@ async def main():
     
     try:
         if args.command == 'add':
-            user = await create_user(db, args.username, args.email)
+            user = await create_user(db, args.username, args.email, args.permissions)
             print(f"用户创建成功: {user.username} (API Key: {user.api_key})")
         
         elif args.command == 'delete':
@@ -122,7 +137,20 @@ async def main():
                 if user.email:
                     print(f"  Email: {user.email}")
                 print(f"  创建时间: {user.created_at}")
+                print(f"  权限: {user.permissions}")
                 print()
+        
+        elif args.command == 'modify':
+            if args.permissions == '*':
+                permissions_dict = {'*': True}
+            else:
+                permissions_list = args.permissions.split(',')
+                permissions_dict = {provider.strip(): True for provider in permissions_list}
+
+            if await db.update_user_permissions(args.username, permissions_dict):
+                print(f"用户 '{args.username}' 的权限已更新")
+            else:
+                print(f"用户 '{args.username}' 不存在")
         
         else:
             parser.print_help()

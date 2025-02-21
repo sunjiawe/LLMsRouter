@@ -276,6 +276,15 @@ async def proxy_openai(request: Request, path: str):
         if not target_url.endswith("/v1"):
             target_url = f"{target_url.rstrip('/')}/v1"
             
+        if ENABLE_ACCOUNT_MANAGEMENT and current_user:
+            # 检查用户权限
+            if server_alias not in current_user.permissions and '*' not in current_user.permissions:
+                return Response(
+                    content=json.dumps({"error": "Forbidden: No access to this provider"}),
+                    media_type="application/json",
+                    status_code=403
+                )
+        
         return await proxy_request(request, target_url, server_alias, current_user)
         
     except Exception as e:
