@@ -127,7 +127,13 @@ curl http://localhost:8000/v1/chat/completions \
 
 LLMsRouter 提供了一个可选的用户管理子系统，可以通过环境变量 `ENABLE_ACCOUNT_MANAGEMENT` 来启用或禁用。启用后，所有的大模型对话请求都需要进行用户认证。
 
-特性-用户追踪：启用用户管理后，每次对话请求的 langfuse 跟踪都自动绑定用户名，便于在后台追踪每个用户的使用情况
+特性：
+
+- 用户对话追踪：启用用户管理后，每次对话请求的 langfuse 跟踪都自动绑定用户名，便于在后台追踪每个用户的使用情况
+
+- 用户权限管理：以控制不同用户对哪些 LLM Provider 有访问权限
+  - 权限检查：在处理 API 请求时，系统会检查当前用户的权限。如果用户没有访问特定 provider 的权限，将返回 403 Forbidden 错误。
+
 
 #### 启用用户管理
 
@@ -137,6 +143,15 @@ ENABLE_ACCOUNT_MANAGEMENT=true
 ```
 
 2. 用户数据将存储在 SQLite 数据库中（默认文件名为 `users.db`）
+
+#### 客户端侧认证
+
+启用用户管理后，所有的 API 请求都需要在请求头中包含有效的用户 API 密钥。
+
+用户的 API 密钥在创建用户时自动生成，可以通过 `list` 命令查看。
+
+认证方法：在支持 openai api 的客户端中，API Key 填入用户密钥用于 LLMsRouter 的用户认证。
+
 
 #### 用户管理命令行工具
 
@@ -148,7 +163,17 @@ python manage.py add <username> --email <email>
 # 例如：
 python manage.py add testuser --email test@example.com
 ```
-创建用户时会自动生成 API 密钥。
+创建用户时会自动生成 API 密钥，默认允许访问所有 provider。
+
+
+```
+python manage.py add <username> --permissions "provider1,provider2"
+
+python manage.py add <username> --permissions "*"
+```
+用户在创建时可以指定访问权限，使用逗号分隔的字符串来列出允许访问的 provider。
+使用星号（`*`）表示用户可以访问所有 provider，这是创建用户时不带 `--permissions` 参数的默认选项。
+
 
 2. 删除用户：
 ```bash
@@ -188,13 +213,13 @@ user2,user2@example.com
 python manage.py list
 ```
 
-#### API 使用
+5. 修改用户权限：
+```bash
+python manage.py modify <username> --permissions "new_providers"
 
-启用用户管理后，所有的 API 请求都需要在请求头中包含有效的用户 API 密钥。
-
-用户的 API 密钥在创建用户时自动生成，可以通过 `list` 命令查看。
-
-认证方法：在openai客户端侧的 API Key填入用户密钥用于 LLMsRouter 的用户认证。
+# 允许访问所有 provider
+python manage.py modify <username> --permissions "*"
+```
 
 
 ## 日志
