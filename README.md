@@ -225,3 +225,19 @@ python manage.py modify <username> --permissions "*"
 ## 日志
 
 日志文件位于 `api_proxy.log`，记录所有请求和响应的详细信息。 
+
+
+## Docker部署
+
+构建镜像：
+```
+docker build -t llmsrouter:latest .
+```
+
+
+运行：
+
+先配置好 `config.yaml` 和 `.env` 文件，然后执行
+```
+docker run -d --name llmsrouter --network host --env-file .env -v $(pwd)/config.yaml:/app/config.yaml llmsrouter:latest
+```
