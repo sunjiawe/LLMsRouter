@@ -8,15 +8,19 @@ LLMsRouter 是一个基于 FastAPI 的 OpenAI API 转发服务，支持将 OpenA
 
 
 功能特性：
-- 在一个OpenAI API Config下集成多个LLM Provider
-- 转发 OpenAI 兼容的 API 请求，通过配置文件管理LLM Provider的API Key
+- 支持在一个 OpenAI API Config 下集成多个 LLM Provider
+  - 转发 OpenAI 兼容的 API 请求，通过配置文件管理多个 LLM Provider 的 API Key
 - 支持流式响应（stream mode）
 - 两种转发模式：
-  - Proxy 模式：通过 URL 参数指定目标服务器
-  - Auto 模式：通过模型名称指定目标服务器（格式：[server]model_name）
+  - [推荐]Auto 模式：通过模型名称指定目标服务器（格式：[server]model_name）
+  - Proxy 模式：通过 URL "proxy"参数指定目标服务器
 - 支持Langfuse的API请求追踪(Trace)
   - 可以轻松统计不同 API Provider 的 tokens 消耗
   - 帮助你调试 agent 工具的调用链路、prompt tricks
+- 用户管理：适合中小企业本地部署 DeepSeek 后，监控、审计各用户的 API 调用情况
+  - 用户认证
+  - 权限管理：控制用户对哪些 Provider 拥有访问权限
+- 支持Docker容器部署
 
 ## 安装
 
