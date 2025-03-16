@@ -16,6 +16,33 @@
 
 </div>
 
+## 🖼️ 功能展示
+
+<div align="center">
+  <table border="0">
+    <tr>
+      <td width="50%" align="center">
+        <p><strong>Langfuse 集成 - 追踪和分析所有 LLM 对话</strong></p>
+        <img src="img/traces.png" alt="Langfuse 追踪" width="100%"/>
+      </td>
+      <td width="50%" align="center">
+        <p><strong>揭秘 Prompt 魔法 (Cline示例)</strong></p>
+        <img src="img/cline_prompt.png" alt="用户管理" width="60%"/>
+      </td>
+    </tr>
+    <tr>
+      <td width="50%" align="center">
+        <p><strong>Windows托盘GUI - 轻松切换不同提供商的模型</strong></p>
+        <img src="img/llm_selector.png" alt="模型选择器" width="30%"/>
+      </td>
+      <td width="50%" align="center">
+        <p><strong>高级搜索语法 - 快速过滤模型</strong></p>
+        <img src="img/advance_search.png" alt="高级搜索" width="30%"/>
+      </td>
+    </tr>
+  </table>
+</div>
+
 ## 🔍 使用场景
 
 - **企业本地部署运营管理** - 很多企业在追求本地部署，那么部署之后如何管理呢？LLMsRouter为团队提供统一的 OpenAI-API 访问点，同时实现用户级别的权限控制和使用追踪。开启用户管理，可为每个员工/服务创建单独的帐号。
