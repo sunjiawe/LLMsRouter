@@ -1,89 +1,86 @@
-# OpenAI API 转发路由服务
+# LLMsRouter
 
-LLMsRouter 是一个基于 FastAPI 的 OpenAI API 转发服务，支持将 OpenAI 兼容的 API 请求转发到不同的目标服务器。
+<div align="center">
 
-这个项目的初衷：
-- 使用Cline插件时，只能配置一个 OpenAI 兼容的URL。利用 LLMsRouter 可以中继多个 LLM 服务商。且接入 Langfuse 后，就可以在单个 WEB UI 中查看这些服务商的 tokens 消耗。 (虽然后面发现了 Roo Code 支持多个配置切换)
-- 对于一些 agnet 工具或插件，想了解其背后的 prompt tricks，需要去看源码。 通过 LLMsRouter with Langfuse，可以轻松的查看到这些 agent 工具背后的 prompt 工程。
+[![GitHub stars](https://img.shields.io/github/stars/sunjiawe/LLMsRouter?style=social)](https://github.com/sunjiawe/LLMsRouter/stargazers)
+[![License](https://img.shields.io/github/license/sunjiawe/LLMsRouter)](https://github.com/sunjiawe/LLMsRouter/blob/main/LICENSE)
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.95.0%2B-009688)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/docker-supported-2496ED)](https://www.docker.com/)
+
+<img src="https://via.placeholder.com/200x200.png?text=LLMsRouter" alt="LLMsRouter Logo" width="200"/>
+
+**一站式 OpenAI 兼容 API 转发路由服务，轻松管理多个大模型提供商**
+
+[English](./README_EN.md) | 中文文档
+
+</div>
+
+## 🔍 使用场景
+
+- **企业级 LLM 管理** - 很多企业在追求本地部署，那么部署之后如何管理呢？LLMsRouter为团队提供统一的 OpenAI-API 访问点，同时实现用户级别的权限控制和使用追踪。开启用户管理，可为每个员工/服务创建单独的帐号。
+
+- **Prompt 揭秘** - 通过 Langfuse 轻松查看各类 agent 应用背后的 prompt 魔法(前提条件：应用支持接入第三方 OpenAI API)
+
+- **开发中轻松切换提供商** - 有没有遇到这种烦恼：在开发大模型应用有时需要切换不同的模型或不同的提供商，来对比模型的效果。目前，并不是所有框架都对模型切换有很好的支持。使用 LLMsRouter 的 User-Bypass 功能，可以轻松在多个提供商之间实时切换模型。(受够了换一次模型，要重新运行一次代码！！)
+
+- **多个提供商接入单个API配置** - 有些AI工具只支持配置一个 OpenAI 兼容的服务商。使用LLMsRouter，可以把多个服务商同时接入(通过自定义的 model 字段控制调用哪一个)。
+
+## ✨ 特性
+
+- 🔄 **多服务商统一管理** - 任意OpenAI兼容的模型都可以接入，并用一个统一的 OpenAI兼容端口对外提供服务
+- 🌊 **流式响应支持** - 支持 stream 模式，实时获取模型响应
+- 🔍 **灵活路由模式**
+  - 🔹 **【推荐】Auto 模式** - 通过自定义模型名称进行路由 `[provider]model_name`  provider是配置文件中定义的别名
+  - 🔹 **Proxy 模式** - 通过 URL 参数指定目标服务器。本模式兼容性不好
+- 📊 **Langfuse 集成** - 轻松追踪和分析 API 请求，监控 tokens 消耗
+- 👥 **用户管理系统** - 用户认证和权限控制，适合企业内部部署
+- 🐳 **Docker 支持** - 简化部署和维护
 
 
-功能特性：
-- 支持在一个 OpenAI API Config 下集成多个 LLM Provider
-  - 转发 OpenAI 兼容的 API 请求，通过配置文件管理多个 LLM Provider 的 API Key
-- 支持流式响应（stream mode）
-- 两种转发模式：
-  - [推荐]Auto 模式：通过模型名称指定目标服务器（格式：[server]model_name）
-  - Proxy 模式：通过 URL "proxy"参数指定目标服务器
-- 支持Langfuse的API请求追踪(Trace)
-  - 可以轻松统计不同 API Provider 的 tokens 消耗
-  - 帮助你调试 agent 工具的调用链路、prompt tricks
-- 用户管理：适合中小企业本地部署 DeepSeek 后，监控、审计各用户的 API 调用情况
-  - 用户认证
-  - 权限管理：控制用户对哪些 Provider 拥有访问权限
-- 支持Docker容器部署
+## 🚀 快速开始
 
-## 安装
+### 安装
 
-1. 克隆仓库
 ```bash
+# 克隆仓库
 git clone https://github.com/sunjiawe/LLMsRouter.git
-```
+cd LLMsRouter
 
-2. 安装依赖：
-```bash
+# 安装依赖
 pip install -r requirements.txt
+
+# 配置服务
+cp config.yaml.template config.yaml
+# 编辑 config.yaml 添加你的服务商信息
 ```
 
-3. 配置 config.yaml
+### 配置
 
-将config.yaml.template重命名为`config.yaml`，并根据需要配置服务商信息。配置文件结构如下：
+编辑 `config.yaml` 文件，添加你的 LLM 服务商信息：
 
 ```yaml
 servers:
-  # 服务器别名
-  server_alias:
-    url: "服务器URL"
-    api_key: "API密钥"
-    filter: "模型过滤条件"    # 可选，支持多个条件（空格分隔）和*通配符
-    override: ["model1", "model2"]  # 可选，手动指定模型列表，设置后将跳过API请求
-    append: ["model3", "model4"]    # 可选，在API返回的模型列表后追加指定模型
-
-```
-
-配置说明：
-- `url`: 服务器的API基础URL
-- `api_key`: 服务器的API密钥
-- `filter`: （可选）模型过滤条件
-  - 支持多个条件，用空格分隔，例如 "gpt free" 表示模型名称同时包含 gpt 和 free
-  - 支持 * 通配符，例如 "gpt*" 表示以 gpt 开头的模型
-- `override`: （可选）手动指定模型列表
-  - 如果设置此字段，将不会请求服务器的 /models 接口
-  - 直接使用指定的模型列表
-- `append`: （可选）追加模型
-  - 这些模型会被添加到从API获取的模型列表后面
-  - 本字段不受filter字段的影响
-
-示例配置：
-```yaml
-servers:
-  local_llm:
-    url: "http://localhost:8000/v1"
-    api_key: "your-api-key"
-    filter: "llama vicuna"  # 只显示同时包含 llama 和 vicuna 的模型
-    append: ["custom-model"]  # 追加自定义模型
-
   openai:
     url: "https://api.openai.com/v1"
-    api_key: "your-openai-key"
+    api_key: "sk-your-openai-key"
     filter: "gpt"  # 只显示包含 gpt 的模型
-    
-  custom_server:
-    url: "https://custom-server.com/v1"
-    api_key: "your-key"
-    override: ["model1", "model2"]  # 手动指定可用模型
+  
+  anthropic:
+    url: "https://api.anthropic.com/v1"
+    api_key: "your-anthropic-key"
+    override: ["claude-3-opus-20240229", "claude-3-sonnet-20240229"]
+  
+  deepseek:
+    url: "http://your-deepseek-server:8000/v1"
+    api_key: "your-deepseek-key"
+    append: ["deepseek-chat", "deepseek-coder"]
 ```
 
-## 运行
+这里的 provider 名称可以随便填，简短、有辨识度即可
+
+
+### 运行
 
 ```bash
 python main.py
@@ -91,157 +88,153 @@ python main.py
 
 服务将在 `http://localhost:8000` 启动。
 
-## 使用方法
+## 📖 详细使用指南
+
+### Auto 模式 (推荐)
+
+在模型名称中嵌入目标服务器，格式为 `[server]model_name`：
+
+```bash
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-api-key" \
+  -d '{
+    "model": "[openai]gpt-4",
+    "messages": [{"role": "user", "content": "解释量子计算的基本原理"}]
+  }'
+```
+
+未开启用户管理时，随便填写一个 api-key。
 
 ### Proxy 模式
 
 通过 URL 参数指定目标服务器：
 
 ```bash
-curl http://localhost:8000/v1/chat/completions?proxy=https://target-server.com \
+curl http://localhost:8000/v1/chat/completions?proxy=openai \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-api-key" \
   -d '{
-    "model": "gpt-3.5-turbo",
-    "messages": [{"role": "user", "content": "Hello!"}]
+    "model": "gpt-4",
+    "messages": [{"role": "user", "content": "解释量子计算的基本原理"}]
   }'
 ```
 
-### Auto 模式
+### 在大模型应用中使用
 
-在模型名称中嵌入目标服务器：
+在支持 OpenAI兼容 API 的AI应用中（如 Cursor、Claude、Open WebUI 等），将 API URL 设置为：
+
+```
+http://localhost:8000/v1
+```
+
+然后在使用时，通过模型名称指定服务商：`[openai]gpt-4`、`[anthropic]claude-3-opus-20240229` 等。
+
+> 如果是服务器部署/docker部署，将localhost替换为服务器IP
+
+## 🔧 进阶配置
+
+### Langfuse 集成
+
+LLMsRouter 支持与 [Langfuse](https://langfuse.com) 集成，用于追踪和分析 API 请求。
+
+1. 在 Langfuse 官网注册账号并创建项目
+2. 获取 `LANGFUSE_SECRET_KEY` 和 `LANGFUSE_PUBLIC_KEY`
+3. 创建 `.env` 文件并添加以下内容：
 
 ```bash
-curl http://localhost:8000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "[https://target-server.com]gpt-3.5-turbo",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'
+LANGFUSE_SECRET_KEY=your-secret-key
+LANGFUSE_PUBLIC_KEY=your-public-key
+LANGFUSE_HOST=https://cloud.langfuse.com  # 或自建服务器地址
 ```
 
-## 进阶配置
+### 用户管理系统
 
-### Langfuse
-
-可以去官网注册一个账号，然后创建一个项目，获取到 `LANGFUSE_SECRET_KEY` 和 `LANGFUSE_PUBLIC_KEY`，然后配置到 `.env` 文件中。
-
-也可以 [自建Langfuse Server](https://langfuse.com/self-hosting) ，并修改`.env`文件中的 `LANGFUSE_HOST` 的IP。
-
-### 用户管理
-
-LLMsRouter 提供了一个可选的用户管理子系统，可以通过环境变量 `ENABLE_ACCOUNT_MANAGEMENT` 来启用或禁用。启用后，所有的大模型对话请求都需要进行用户认证。
-
-特性：
-
-- 用户对话追踪：启用用户管理后，每次对话请求的 langfuse 跟踪都自动绑定用户名，便于在后台追踪每个用户的使用情况
-
-- 用户权限管理：以控制不同用户对哪些 LLM Provider 有访问权限
-  - 权限检查：在处理 API 请求时，系统会检查当前用户的权限。如果用户没有访问特定 provider 的权限，将返回 403 Forbidden 错误。
-
+启用用户管理后，所有 API 请求都需要进行用户认证。
 
 #### 启用用户管理
 
-1. 在 `.env` 文件中设置：
 ```bash
+# 在 .env 文件中添加
 ENABLE_ACCOUNT_MANAGEMENT=true
 ```
 
-2. 用户数据将存储在 SQLite 数据库中（默认文件名为 `users.db`）
+#### 用户管理命令
 
-#### 客户端侧认证
-
-启用用户管理后，所有的 API 请求都需要在请求头中包含有效的用户 API 密钥。
-
-用户的 API 密钥在创建用户时自动生成，可以通过 `list` 命令查看。
-
-认证方法：在支持 openai api 的客户端中，API Key 填入用户密钥用于 LLMsRouter 的用户认证。
-
-
-#### 用户管理命令行工具
-
-提供了一个命令行工具用于管理用户，支持以下操作：
-
-1. 添加单个用户：
 ```bash
-python manage.py add <username> --email <email>
-# 例如：
-python manage.py add testuser --email test@example.com
-```
-创建用户时会自动生成 API 密钥，默认允许访问所有 provider。
+# 添加用户
+python manage.py add username --email user@example.com
 
+# 设置用户权限
+python manage.py add username --permissions "openai,anthropic"
 
-```
-python manage.py add <username> --permissions "provider1,provider2"
-
-python manage.py add <username> --permissions "*"
-```
-用户在创建时可以指定访问权限，使用逗号分隔的字符串来列出允许访问的 provider。
-使用星号（`*`）表示用户可以访问所有 provider，这是创建用户时不带 `--permissions` 参数的默认选项。
-
-
-2. 删除用户：
-```bash
-python manage.py delete <username>
-```
-
-3. 批量导入用户：
-```bash
-python manage.py import <file>
-```
-支持从 CSV 或 JSON 文件批量导入用户。
-
-文件格式示例：
-- CSV 文件 (users.csv):
-```csv
-username,email
-user1,user1@example.com
-user2,user2@example.com
-```
-
-- JSON 文件 (users.json):
-```json
-[
-  {
-    "username": "user1",
-    "email": "user1@example.com"
-  },
-  {
-    "username": "user2",
-    "email": "user2@example.com"
-  }
-]
-```
-
-4. 列出所有用户：
-```bash
+# 列出所有用户
 python manage.py list
+
+# 修改用户权限
+python manage.py modify username --permissions "openai,deepseek"
+
+# 批量导入用户
+python manage.py import users.csv
 ```
 
-5. 修改用户权限：
+## 🐳 Docker 部署
+
+### 自行构建镜像
+
 ```bash
-python manage.py modify <username> --permissions "new_providers"
-
-# 允许访问所有 provider
-python manage.py modify <username> --permissions "*"
-```
-
-
-## 日志
-
-日志文件位于 `api_proxy.log`，记录所有请求和响应的详细信息。 
-
-
-## Docker部署
-
-构建镜像：
-```
 docker build -t llmsrouter:latest .
+
+docker run -d --name llmsrouter \
+  -p 8000:8000 \
+  --network host \
+  --env-file .env \
+  -v $(pwd)/config.yaml:/app/config.yaml \
+  llmsrouter:latest
 ```
 
+## 📊 架构
 
-运行：
+```
+┌─────────────┐     ┌───────────────┐     ┌─────────────────┐
+│ 客户端工具   │────▶│   LLMsRouter  │────▶│  OpenAI API     │
+│ (Claude等)   │     │               │     └─────────────────┘
+└─────────────┘     │   ┌─────────┐ │     ┌─────────────────┐
+                    │   │ 路由层   │ │────▶│  Anthropic API  │
+┌─────────────┐     │   └─────────┘ │     └─────────────────┘
+│ OpenAI SDK  │────▶│   ┌─────────┐ │     ┌─────────────────┐
+│ 应用        │     │   │用户管理 │ │────▶│  自部署模型 API  │
+└─────────────┘     │   └─────────┘ │     └─────────────────┘
+                    └───────┬───────┘
+                            │
+                    ┌───────▼───────┐
+                    │   Langfuse    │
+                    │  (请求追踪)   │
+                    └───────────────┘
+```
 
-先配置好 `config.yaml` 和 `.env` 文件，然后执行
-```
-docker run -d --name llmsrouter --network host --env-file .env -v $(pwd)/config.yaml:/app/config.yaml llmsrouter:latest
-```
+## 📝 配置文件详解
+
+`config.yaml` 配置选项：
+
+| 选项 | 说明 | 示例 |
+|------|------|------|
+| `url` | 大模型提供商的 API 基础 URL | `https://api.openai.com/v1` |
+| `api_key` | 大模型提供商的 API 密钥 | `provider-api-key` |
+| `filter` | 过滤/models的结果 | `gpt*` 或 `gpt free` |
+| `append` | 在 API 返回的模型列表后追加指定模型 | `["custom-model"]` |
+| `override` | 手动指定模型列表，设置后跳过 API 请求 | `["model1", "model2"]` |
+
+
+## 🤝 贡献
+
+欢迎提交 Pull Request 或创建 Issue！
+
+## 📄 许可证
+
+[MIT License](LICENSE)
+
+## 🙏 致谢
+
+- [FastAPI](https://fastapi.tiangolo.com/) - 高性能 API 框架
+- [Langfuse](https://langfuse.com/) - LLM 应用监控平台
