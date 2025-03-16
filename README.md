@@ -8,9 +8,9 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.95.0%2B-009688)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/docker-supported-2496ED)](https://www.docker.com/)
 
-<img src="https://via.placeholder.com/200x200.png?text=LLMsRouter" alt="LLMsRouter Logo" width="200"/>
+<img src="img/logo.png" alt="LLMsRouter Logo" width="200"/>
 
-**一站式 OpenAI 兼容 API 转发路由服务，轻松管理多个大模型提供商**
+**一站式管理你手上的大模型(LLM)提供商，在模型之间轻松、无缝切换**
 
 [English](./README_EN.md) | 中文文档
 
@@ -18,9 +18,9 @@
 
 ## 🔍 使用场景
 
-- **企业级 LLM 管理** - 很多企业在追求本地部署，那么部署之后如何管理呢？LLMsRouter为团队提供统一的 OpenAI-API 访问点，同时实现用户级别的权限控制和使用追踪。开启用户管理，可为每个员工/服务创建单独的帐号。
+- **企业本地部署运营管理** - 很多企业在追求本地部署，那么部署之后如何管理呢？LLMsRouter为团队提供统一的 OpenAI-API 访问点，同时实现用户级别的权限控制和使用追踪。开启用户管理，可为每个员工/服务创建单独的帐号。
 
-- **Prompt 揭秘** - 通过 Langfuse 轻松查看各类 agent 应用背后的 prompt 魔法(前提条件：应用支持接入第三方 OpenAI API)
+- **揭秘 Prompt 魔法** - 通过 Langfuse 轻松揭秘各种 AI 应用背后的 prompt 魔法 (前提条件：应用支持接入第三方 OpenAI API)
 
 - **开发中轻松切换提供商** - 有没有遇到这种烦恼：在开发大模型应用有时需要切换不同的模型或不同的提供商，来对比模型的效果。目前，并不是所有框架都对模型切换有很好的支持。使用 LLMsRouter 的 User-Bypass 功能，可以轻松在多个提供商之间实时切换模型。(受够了换一次模型，要重新运行一次代码！！)
 
@@ -226,6 +226,14 @@ docker run -d --name llmsrouter \
 | `override` | 手动指定模型列表，设置后跳过 API 请求 | `["model1", "model2"]` |
 
 
+罗列一些不错的 LLM API 提供商：
+- [DeepSeek](https://platform.deepseek.com/)
+- [阿里百炼](https://bailian.console.aliyun.com/#/model-market)
+- [字节火山云](https://console.volcengine.com/ark)
+- [OpenRouter](https://openrouter.ai/models)
+- [硅基流动](https://cloud.siliconflow.cn/models)
+
+
 ## 🤝 贡献
 
 欢迎提交 Pull Request 或创建 Issue！
@@ -236,5 +244,6 @@ docker run -d --name llmsrouter \
 
 ## 🙏 致谢
 
-- [FastAPI](https://fastapi.tiangolo.com/) - 高性能 API 框架
+- [Cursor](https://cursor.sh/) - 强大的 AI 辅助开发工具
 - [Langfuse](https://langfuse.com/) - LLM 应用监控平台
+- [FastAPI](https://fastapi.tiangolo.com/) - 高性能 API 框架
