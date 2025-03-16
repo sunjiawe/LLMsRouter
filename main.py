@@ -17,7 +17,15 @@ from dataclasses import dataclass
 from threading import Lock
 
 # 用户管理系统
-from user_management import SQLiteProvider, get_current_user, User
+from user_management import (
+    SQLiteProvider, 
+    get_current_user, 
+    User, 
+    BypassRequest, 
+    set_user_bypass, 
+    get_user_bypass,
+    get_user_bypass_model
+)
 
 load_dotenv()  # load .env
 
@@ -40,6 +48,7 @@ class Config(BaseModel):
 config: Config = None
 db: Optional[SQLiteProvider] = None
 ENABLE_ACCOUNT_MANAGEMENT = os.getenv("ENABLE_ACCOUNT_MANAGEMENT", "false").lower() == "true"
+ENABLE_BYPASS = os.getenv("ENABLE_BYPASS", "true").lower() == "true"
 
 def load_config(config_path: str = "config.yaml") -> Config:
     """加载YAML配置文件"""
@@ -272,6 +281,14 @@ async def proxy_openai(request: Request, path: str):
         proxy_url = request.query_params.get("proxy")
         model = body.get("model", "")
         
+        # 如果启用了 bypass 功能并且用户有 bypass 设置，则使用 bypass 模型
+        if ENABLE_BYPASS and ENABLE_ACCOUNT_MANAGEMENT and current_user != "anonymous":
+            bypass_model = get_user_bypass_model(current_user.username)
+            if bypass_model and bypass_model != "auto":
+                logger.info(f"用户 {current_user.username} 使用 bypass 模型: {bypass_model}")
+                model = bypass_model
+                body["model"] = model
+        
         target_url, server_alias = parse_target_url(model, proxy_url)
         if not target_url.endswith("/v1"):
             target_url = f"{target_url.rstrip('/')}/v1"
@@ -386,6 +403,66 @@ class ModelsCache:
 models_cache: Optional[ModelsCache] = None
 cache_lock = Lock()
 CACHE_TTL = 300  # 缓存时间为5分钟
+
+
+@app.post("/api/user/bypass")
+async def bypass_endpoint_post(request: Request, bypass_request: BypassRequest):
+    """设置用户的 bypass 模型"""
+
+    if not ENABLE_BYPASS:
+        return Response(
+            content=json.dumps({
+                "status": "error",
+                "message": "Bypass 功能未启用"
+            }),
+            media_type="application/json",
+            status_code=400
+        )
+    
+    if not ENABLE_ACCOUNT_MANAGEMENT:
+        return Response(
+            content=json.dumps({
+                "status": "error",
+                "message": "用户管理系统未启用"
+            }),
+            media_type="application/json",
+            status_code=400
+        )
+    
+    return await set_user_bypass(
+        request, 
+        bypass_request, 
+        db, 
+        get_current_user, 
+        fetch_models_from_server, 
+        models_cache, 
+        config
+    )
+
+@app.get("/api/user/bypass")
+async def bypass_endpoint_get(request: Request):
+    """获取用户的 bypass 设置"""
+    if not ENABLE_BYPASS:
+        return Response(
+            content=json.dumps({
+                "status": "error",
+                "message": "Bypass 功能未启用"
+            }),
+            media_type="application/json",
+            status_code=400
+        )
+    
+    if not ENABLE_ACCOUNT_MANAGEMENT:
+        return Response(
+            content=json.dumps({
+                "status": "error",
+                "message": "用户管理系统未启用"
+            }),
+            media_type="application/json",
+            status_code=400
+        )
+    
+    return await get_user_bypass(request, db, get_current_user)
 
 if __name__ == "__main__":
     import uvicorn
